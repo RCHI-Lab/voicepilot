@@ -71,7 +71,7 @@ class ObiMovement():
     self.speed = 2
     self.accel = 2
     self.mouthpos = MOUTHPOS #[21274, 17098, 15270, 17810, 19902, 26628] #[23146,15515,18839,19867,18021,26601]
-    self.deep_scoop = False
+    self.scoop_depth = 0
     self.flag = 0
     print(self.robot.SerialIsOpen())
     print(self.robot.VersionInfo())
@@ -113,6 +113,17 @@ class ObiMovement():
       prev_pos = curr_pos
       curr_pos = self.robot.MotorPositions()
     return
+  
+  def cap_speed_and_accel(self):
+    if self.speed > 5:
+      self.speed = 5
+    elif self.speed < 0:
+      self.speed = 0
+
+    if self.accel > 5:
+      self.accel = 5
+    elif self.accel < 0:
+      self.accel = 0
 
   def check_for_code(self):
     with open('obi-code.txt', 'r') as f:
@@ -125,14 +136,10 @@ class ObiMovement():
         if mod_line in ['self.start()', 'self.pause_indefinitely()', 'self.stop()']:
           ldict = {'self':self}
           exec(mod_line, globals(), ldict)
-        elif 'speed' in line or 'accel' in line or 'deep_scoop' in line:
+        elif 'speed' in line or 'accel' in line or 'scoop_depth' in line:
           try:
             ldict = {'self':self}
             exec(mod_line, globals(), ldict)
-            """ if 'self.speed' in ldict:
-              self.speed = ldict['self.speed']
-            if 'self.accel' in ldict:
-              self.accel = ldict['self.accel'] """
           except: 
             print("Code (being excecuted within class): " + mod_line)
             if sys.exc_info()[0] != SyntaxError:
@@ -153,10 +160,11 @@ class ObiMovement():
       time.sleep(.2)
       self.check_for_code()
 
-    print(f"Scooping from bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel} with {'deep scoops' if self.deep_scoop else 'shallow scoops'}")
+    self.cap_speed_and_accel()
+    print(f"Scooping from bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel} with {'deep scoops' if self.scoop_depth == 1 else 'shallow scoops'}")
     sound = AudioSegment.from_mp3("sounds/scoop.mp3")
     play(sound)
-    if self.deep_scoop:
+    if self.scoop_depth == 1:
       if bowlno == 0:
         waypoints = DEEPSCOOP_0
       elif bowlno == 1:
@@ -192,6 +200,7 @@ class ObiMovement():
       time.sleep(.2)
       self.check_for_code()
 
+    self.cap_speed_and_accel()
     if bowlno != "previous":
       self.bowlno = bowlno
     print(f"Scraping down bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel}")
@@ -213,10 +222,10 @@ class ObiMovement():
     self.robot.ExecuteOnTheFlyPath()
     self.wait_til_done()
 
-    print(f"Scooping from bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel} with {'deep scoops' if self.deep_scoop else 'shallow scoops'}")
+    print(f"Scooping from bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel} with {'deep scoops' if self.scoop_depth == 1 else 'shallow scoops'}")
     sound = AudioSegment.from_mp3("sounds/scoop.mp3")
     play(sound)
-    if self.deep_scoop:
+    if self.scoop_depth == 1:
       if bowlno == 0:
         waypoints = DEEPSCOOP_0
       elif bowlno == 1:
@@ -261,6 +270,7 @@ class ObiMovement():
       time.sleep(.2)
       self.check_for_code()
 
+    self.cap_speed_and_accel()
     print(f"Moving to mouth at max speed {self.speed} and max accel {self.accel}")
     waypoint = self.mouthpos + [self.speed*2000, self.accel*6000, 0]
     self.robot.SendOnTheFlyWaypointToObi(0, waypoint)
