@@ -1,68 +1,63 @@
-import obi, time, csv, sys
-from pydub import AudioSegment
-from pydub.playback import play
+import obi, time, csv, sys, os
+from playsound import playsound
 
-with open('saved-positions/bowls.csv', 'r') as read_obj:
+path = os.path.dirname(os.path.abspath(__file__))
+
+with open(path + '/saved-positions/bowls.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   BOWL_COORDS = list(csv_reader)
 
-with open('saved-positions/bowl0-scoop-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl0-scoop-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCOOP_0 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl1-scoop-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl1-scoop-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCOOP_1 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl2-scoop-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl2-scoop-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCOOP_2 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl3-scoop-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl3-scoop-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCOOP_3 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl0-scrape-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl0-scrape-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCRAPE_0 = list(csv_reader)
 
-with open('saved-positions/bowl1-scrape-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl1-scrape-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCRAPE_1 = list(csv_reader)
 
-with open('saved-positions/bowl2-scrape-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl2-scrape-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCRAPE_2 = list(csv_reader)
 
-with open('saved-positions/bowl3-scrape-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl3-scrape-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   SCRAPE_3 = list(csv_reader)
 
-with open('saved-positions/bowl0-scoop-deep-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl0-scoop-deep-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   DEEPSCOOP_0 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl1-scoop-deep-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl1-scoop-deep-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   DEEPSCOOP_1 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl2-scoop-deep-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl2-scoop-deep-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   DEEPSCOOP_2 = list(csv_reader)[:-1]
 
-with open('saved-positions/bowl3-scoop-deep-refined.csv', 'r') as read_obj:
+with open(path + '/saved-positions/bowl3-scoop-deep-refined.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   DEEPSCOOP_3 = list(csv_reader)[:-1]
 
-with open('saved-positions/mouth-pos.csv', 'r') as read_obj:
+with open(path + '/saved-positions/mouth-pos.csv', 'r') as read_obj:
   csv_reader = csv.reader(read_obj)
   MOUTHPOS = list(csv_reader)[0]
-
-def motorpos_equal(pos1, pos2):
-  for i in range(6):
-    if abs(pos1[i] - pos2[i]) > 100:
-      return False
-  return True
 
 class ObiMovement():
   def __init__(self):
@@ -76,7 +71,7 @@ class ObiMovement():
     print(self.robot.SerialIsOpen())
     print(self.robot.VersionInfo())
     self.robot.Wakeup()
-    time.sleep(15)
+    self.robot.WaitForCMUResponse()
     print("I'm up!")
 
   def start(self):
@@ -90,8 +85,7 @@ class ObiMovement():
   def stop(self):
     self.flag = 2
     print("Stopped")
-    sound = AudioSegment.from_mp3("sounds/stop.mp3")
-    play(sound)
+    playsound(path + "/sounds/stop.mp3")
 
   def time_delay(self, secs):
     self.check_for_code()
@@ -102,17 +96,6 @@ class ObiMovement():
       self.check_for_code()
     print("Waiting for " + str(secs) + " seconds.")
     time.sleep(secs)
-
-  def wait_til_done(self):
-    time.sleep(1)
-    prev_pos = self.robot.MotorPositions()
-    time.sleep(0.2)
-    curr_pos = self.robot.MotorPositions()
-    while not motorpos_equal(prev_pos, curr_pos):
-      time.sleep(0.2)
-      prev_pos = curr_pos
-      curr_pos = self.robot.MotorPositions()
-    return
   
   def cap_speed_and_accel(self):
     if self.speed > 5:
@@ -147,7 +130,7 @@ class ObiMovement():
         else:
           f.write(line)
     
-    with open('obi-code.txt', 'r') as f:
+    with open(path + '/obi-code.txt', 'r') as f:
       code = f.read()
     if code != "":
       self.stop()
@@ -162,8 +145,8 @@ class ObiMovement():
 
     self.cap_speed_and_accel()
     print(f"Scooping from bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel} with {'deep scoops' if self.scoop_depth == 1 else 'shallow scoops'}")
-    sound = AudioSegment.from_mp3("sounds/scoop.mp3")
-    play(sound)
+    playsound(path + "/sounds/scoop.mp3")
+
     if self.scoop_depth == 1:
       if bowlno == 0:
         waypoints = DEEPSCOOP_0
@@ -190,7 +173,7 @@ class ObiMovement():
       waypoint = waypoints[i] + [self.speed*2000, self.accel*6000, 0]
       self.robot.SendOnTheFlyWaypointToObi(i, waypoint)
     self.robot.ExecuteOnTheFlyPath()
-    self.wait_til_done()
+    self.robot.WaitForCMUResponse()
 
   def scrape_then_scoop_bowlno(self, bowlno="previous"):
     self.check_for_code()
@@ -199,13 +182,11 @@ class ObiMovement():
     while self.flag == 1:
       time.sleep(.2)
       self.check_for_code()
-
     self.cap_speed_and_accel()
     if bowlno != "previous":
       self.bowlno = bowlno
     print(f"Scraping down bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel}")
-    sound = AudioSegment.from_mp3("sounds/scrape.mp3")
-    play(sound)
+    playsound(path + "/sounds/scrape.mp3")
 
     if self.bowlno == 0:
       waypoints = SCRAPE_0
@@ -220,11 +201,10 @@ class ObiMovement():
       waypoint = waypoints[i] + [self.speed*2000, self.accel*6000, 0]
       self.robot.SendOnTheFlyWaypointToObi(i, waypoint)
     self.robot.ExecuteOnTheFlyPath()
-    self.wait_til_done()
+    self.robot.WaitForCMUResponse()
 
     print(f"Scooping from bowl {str(self.bowlno)} at max speed {self.speed} and max accel {self.accel} with {'deep scoops' if self.scoop_depth == 1 else 'shallow scoops'}")
-    sound = AudioSegment.from_mp3("sounds/scoop.mp3")
-    play(sound)
+    playsound(path + "/sounds/scoop.mp3")
     if self.scoop_depth == 1:
       if bowlno == 0:
         waypoints = DEEPSCOOP_0
@@ -260,7 +240,7 @@ class ObiMovement():
       waypoint = waypoints[i] + [self.speed*2000, self.accel*6000, 0]
       self.robot.SendOnTheFlyWaypointToObi(i, waypoint)
     self.robot.ExecuteOnTheFlyPath()
-    self.wait_til_done()
+    self.robot.WaitForCMUResponse()
 
   def move_to_mouth(self):
     self.check_for_code()
@@ -275,7 +255,7 @@ class ObiMovement():
     waypoint = self.mouthpos + [self.speed*2000, self.accel*6000, 0]
     self.robot.SendOnTheFlyWaypointToObi(0, waypoint)
     self.robot.ExecuteOnTheFlyPath()
-    self.wait_til_done()
+    self.robot.WaitForCMUResponse()
 
   def close(self):
     self.robot.GoToSleep()

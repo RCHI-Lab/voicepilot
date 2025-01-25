@@ -1,0 +1,7 @@
+pyaudio
+openai-whisper
+openai==0.28
+pvporcupine
+pyserial
+playsound
+pynput

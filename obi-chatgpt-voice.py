@@ -1,35 +1,66 @@
 import pyaudio, wave, datetime, whisper, openai, time
-import ffmpeg
 import pvporcupine
-import struct
+import struct, os
 import math 
-from pydub import AudioSegment
-from pydub.playback import play
-import simpleaudio as sa
+from playsound import playsound
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="whisper")
 
 import threading
+path = os.path.dirname(os.path.abspath(__file__))
 
+# let the user enter the foods in each bowl
+print()
+print("Enter the foods in each bowl")
+bowl0 = input("Bowl 0 (closest to obi's arm): ")
+bowl1 = input("Bowl 1 (counterclockwise from bowl 0): ")
+bowl2 = input("Bowl 2 (counterclockwise from bowl 1): ")
+bowl3 = input("Bowl 3 (counterclockwise from bowl 2): ")
+print()
 
+# modify prompt to include foods
+with open(path + '/obi-prompt.txt', 'r') as f:
+  file_contents = f.readlines()
+  file_contents[2] = 'Bowl 0: ' + bowl0 + '\n'
+  file_contents[3] = 'Bowl 1: ' + bowl1 + '\n'
+  file_contents[4] = 'Bowl 2: ' + bowl2 + '\n'
+  file_contents[5] = 'Bowl 3: ' + bowl3 + '\n'
+  file_contents = ''.join(file_contents)
+  
+with open(path + '/obi-prompt.txt', 'w') as f:
+  f.write(file_contents)
 
-openai.api_key = #OPENAI_API_KEY
-
+openai.api_key = #OPEN_AI_API_KEY
 
 porcupine = pvporcupine.create(
-  access_key= #PORCUPINE_ACCESS_KEY,
-  keyword_paths=['Hey-Obi_en_mac_v2_2_0.ppn'],
+  access_key=#PORCUPINE_ACCESS_KEY,
+  keyword_paths=[path + '/hey-obi_en_mac_v3_0_0.ppn'],
   sensitivities = [0.5]
 )
 
-participantid = input("Enter the participant's ID: ")
 ct = datetime.datetime.now()
-LOG_FILE_PATH = f"obi-logs/{participantid}_{ct}.txt"
+LOG_FILE_PATH = f"obi-logs/{ct}.txt"
 TEMPERATURE = 0.1
 
 pa = pyaudio.PyAudio()
 channels = 1
 sample_format = pyaudio.paInt16
 fs = porcupine.sample_rate
-mic_num = 0
+
+mic_num = -1
+for i in range(pa.get_device_count()):
+  if 'USB PnP' in pa.get_device_info_by_index(i)['name']:
+    mic_num = i
+    break
+  elif 'Microphone' in pa.get_device_info_by_index(i)['name']:
+    mic_num = i
+
+if mic_num == -1:
+  print("No mic found")
+  exit()
+else:
+  print("Selected mic:", pa.get_device_info_by_index(mic_num)['name'])
+
 audio_stream = pa.open(
                 rate=fs,
                 channels=channels,
@@ -38,40 +69,36 @@ audio_stream = pa.open(
                 frames_per_buffer=porcupine.frame_length,
                 input_device_index=mic_num)
 
-def sound_play_threading(sound):
-  wave_obj = sa.WaveObject.from_wave_file(sound)
-  play_obj = wave_obj.play()
-
-
 def get_chatgpt_code(messages):
   begintime = time.time()
   completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo-0613", 
+    model="gpt-4o-mini", 
     temperature=TEMPERATURE,
-    messages=messages
+    messages=messages,
   )
   elapsedtime = time.time() - begintime
   output = completion.choices[0].message.content
   messages.append({"role": "assistant", "content": output})
   with open(LOG_FILE_PATH, 'a') as f:
     f.write(f'ChatGPT Response Time: {elapsedtime}\nChatGPT: {output}\n\n\n')
-  print("ChatGPT Response Time: " + str(elapsedtime))
+  # print("ChatGPT Response Time: " + str(elapsedtime))
   print("ChatGPT: " + output)
   mod_output = output.replace("import obirobot", "")
   if '```' in mod_output:
     mod_output = mod_output.split('```')[1]
     mod_output = mod_output.replace("python", "")
-  with open('obi-code.txt', 'a') as f:
+  with open(path + '/obi-code.txt', 'a') as f:
     f.write(mod_output)
   print()
 
 
 def process_frames(frames):
   ct = datetime.datetime.now()
-  RECORDING_FILE_PATH = f"voice-recordings/{ct}.wav"
+  RECORDING_FILE_PATH = f"{path}/voice-recordings/{ct}.wav"
   print('Finished recording.')
-  sound_file = "sounds_wav/processing.wav"
-  sound_play_threading(sound_file)
+  print()
+  # sound_file = "sounds_wav/processing.wav"
+  # sound_play_threading(sound_file)
   #play(sound)
 
   transcription_begintime = time.time()
@@ -86,12 +113,12 @@ def process_frames(frames):
   model = whisper.load_model("base.en")
   result = model.transcribe(RECORDING_FILE_PATH, fp16=False)["text"]
   transcription_elapsedtime = time.time() - transcription_begintime
-  print("Transcription Time: " + str(transcription_elapsedtime))
+  # print("Transcription Time: " + str(transcription_elapsedtime))
   print("You: " + result)
   print()
   return result
 
-with open('obi-prompt.txt', 'r') as f:
+with open(path + '/obi-prompt.txt', 'r') as f:
   file_contents = f.read()
 with open(LOG_FILE_PATH, 'w') as f:
   f.write(f'System: {file_contents} \n\nTemp: {TEMPERATURE} \n\n\n')
@@ -120,11 +147,9 @@ if __name__ == "__main__":
   audio_stream.start_stream()
   mic_silence_value = 4 #TODO: change 
   print()
-  print("Current set mic silence value:", mic_silence_value)
+  # print("Current set mic silence value:", mic_silence_value)
   current_mic_value = round(rms(audio_stream.read(1024)),2) 
-  print("Current silence value (assuming no one talking):", current_mic_value)
-  print()
-  print()
+  # print("Current silence value (assuming no one talking):", current_mic_value)
   print("READY")
 
 
@@ -134,13 +159,15 @@ if __name__ == "__main__":
       pcm = struct.unpack_from("h" * porcupine.frame_length, data)
       keyword_index = porcupine.process(pcm)
       if keyword_index == 0:
-        sound_file = "sounds_wav/heyobi-beep.wav"
-        sound_play_threading(sound_file)
+        sound_path = path + "/sounds/heyobi-beep.wav"
+        t = threading.Thread(target=playsound, args=(sound_path,))
+        t.start()
+
         data = audio_stream.read(1024)
         threshold = mic_silence_value*2
         print()
-        print('detected obi')
-        print("Silence Threshold:", threshold)
+        print('\"Hey Obi\" detected. Please start speaking.')
+        # print("Silence Threshold:", threshold)
         print()        
         frames = []
         timeout_started = False
@@ -155,13 +182,12 @@ if __name__ == "__main__":
         while True:
           last_data = data
           data = audio_stream.read(1024)
-          print("Noise Level:", round(rms(data),2), threshold)
+          # print("Noise Level:", round(rms(data),2), threshold)
           if rms(data) > threshold and passed_initial_threshold == 0 and passed_initial_threshold_started == False:
             passed_initial_threshold_start_time = time.time()
-            #passed_initial_threshold = 1
             frames.append(last_data)
             frames.append(data)
-            print("passed initial threshold")
+            # print("passed initial threshold")
             passed_initial_threshold_started = True
           elif passed_initial_threshold_started == True: 
             if rms(data) < threshold:
@@ -170,32 +196,34 @@ if __name__ == "__main__":
               passed_initial_threshold_started = False
             elif time.time()-passed_initial_threshold_start_time <  passed_initial_threshold_timeout:
               frames.append(data)
-              print(time.time()-passed_initial_threshold_start_time)
+              # print(time.time()-passed_initial_threshold_start_time)
             else:
               passed_initial_threshold = 1
               frames.append(data)
-              print("passed initial threshold")
+              # print("passed initial threshold")
               passed_initial_threshold_started = False
           elif passed_initial_threshold == 1:
             if timeout_started == True and time.time()-timeout_start_time > threshold_timeout:
               frames.append(data)
-              print("ended")
+              # print("ended")
               break
             elif rms(data) < threshold and timeout_started == False:
               timeout_start_time = time.time()
-              print("started")
+              # print("started")
               timeout_started = True
               frames.append(data)
             elif rms(data) < threshold and timeout_started == True:
               frames.append(data)
-              print("Time Elapsed since Silence started:", time.time()-timeout_start_time)
+              # print("Time Elapsed since Silence started:", time.time()-timeout_start_time)
             else:
               frames.append(data)
               timeout_start_time = time.time()
               timeout_started = False
           else:
-            print("Waiting for person to speak")
+            pass
+            # print("Waiting for person to speak")
         
+        t.join()
         audio_stream.stop_stream()
         #audio_stream.close()
         chatgpt_input = process_frames(frames)
@@ -207,7 +235,7 @@ if __name__ == "__main__":
 
           
   except KeyboardInterrupt:
-    with open('obi-code.txt', 'w') as f:
+    with open(path + '/obi-code.txt', 'w') as f:
       f.write('SYSTEM_TERMINATE()')
     pass
 

@@ -56,10 +56,10 @@ class Obi:
         StringCommandOutput = '\x02' + StringCommandInput + '\n'
         ser.write(StringCommandOutput.encode())
 
-        ######################################################################
-        # Pause a bit to give Obi time to process and reespond to the command.
-        ######################################################################
-        time.sleep(0.75)
+        #####################################################################
+        # Pause a bit to give Obi time to process and respond to the command.
+        #####################################################################
+        time.sleep(0.25)
 
         ###################################################################################################
         # Note: as in other programs, the serial port buffer will contain our command, then Obi's response,
@@ -111,6 +111,62 @@ class Obi:
         fred2 = fred1[fred2start+1:fred2end]
         return fred2
 
+    ##################################################################################
+    # Used to for a message from Obi intended for us.  It has a leading hex code of 7.
+    # We return it as a string to our caller.
+    ##################################################################################
+    def WaitForCMUResponse(self):
+        ####################################################################################
+        # This message can come at any time, fairly quickly for thing like move to next bowl
+        # or quite a while later when exceuting a series of waypoints.  So we need to wait
+        # 'til we find the start of our message.  The (fairly safe) assumption is that we'll
+        # only get this in a respmnse to a single command to Obi and the next such command
+        # won't go outy until "this" one is done.
+        ####################################################################################
+        fred2start = -1
+        while (fred2start  < 0):
+           if ser.inWaiting() > 0:
+               fredtest = ser.read(1).decode()
+               ##################################################################################
+               # "ord" is Python's way of doing what any other language would do with a hex code.
+               # Hence "ord == 7" means "is this \x07".  Note that if it never arrives for example
+               # if this call is made following an Obi funstion that doesn't reply with something
+               # for us) we'll loop forever.  If that becomes an issue, exit the loop after enuf
+               # time has gone by.
+               ##################################################################################
+               if ord(fredtest) == 7:
+                 fred2start = 0
+                 fred1index = 0
+                 break
+           #################################################
+           # Pause for a bit to wait for the next character.
+           #################################################
+           time.sleep(.1)
+
+        fred1 = ''
+        while ser.inWaiting() > 0:
+            fred1 += ser.read(1).decode()
+
+        fred2end = 0
+        fred1index = -1
+        for fred1char in fred1:
+            fred1index += 1
+            #########################################################################################
+            # Having found the leading \x07, look for the line terminator at the end of the response.
+            #########################################################################################
+            if fred2start >= 0:
+                if fred1char == '\r' or fred1char == '\n':
+                    fred2end = fred1index
+                    break
+
+        ################################################################
+        # Extract everything after the \x07 (which is not in the string)
+        # and before the line terminator (which is not in the string)
+        # and return that to our caller.
+        ################################################################
+        fred2 = fred1[fred2start:fred2end]
+        return fred2
+
     #####################################################################################################
     # Gets version info from Obi.  Mainly useful to check if the serial connection to Obi is operational.
     # The port can be opened without Obi actually being there so checking if the serial conection is open
@@ -118,6 +174,23 @@ class Obi:
     #####################################################################################################
     def VersionInfo(self):
         return self.SendCommandToObiWithResponse('_getversioninfo')
+
+    ##################################
+    # Gets arm moving status from Obi.
+    ##################################
+    def ArmIsMoving(self):
+        ArmStatusString = self.SendCommandToObiWithResponse('_ArmMovingQuery')
+        ##########################################################
+        # Obi gives us string with a format of:
+        #
+        #  ~ArmMoving, 0 or 1
+        #
+        # Parse 'em out into a list, keeping in mind that the 1st,
+        # index 0, has the leading text,
+        ##########################################################
+        ArmStatii = [0, 0]
+        ArmStatii = ArmStatusString.split(",")
+        return ArmStatii[1]
 
     #############################
     # Tell Obi to turn itself on.
@@ -131,8 +204,23 @@ class Obi:
     def GoToSleep(self):
         self.SendCommandToObiNoResponse('_DN')
 
+    ################################################################################
+    # Tell Obi to stop its current motion.  This is a Noop if the Arm is not moving.
+    ################################################################################
+    def StopMotion(self):
+        self.SendCommandToObiNoResponse('_STOP')
+        #time.sleep(3.0)
+
+    ################################################################################
+    # Tell Obi to restart its motion with an 'on the fly' path.  This is a Noop if
+    # the Arm is not in a collision state or no path has been defined.
+    ################################################################################
+    #def MoveToNewPath(self):
+    #    self.SendCommandToObiNoResponse('_RESTART')
+
     ##################################################################
     # Tell Obi to move to the next bowl (includes returning from POD).
+    # Also restarts motion after a stop command.    
     ##################################################################
     def MoveToNextBowl(self):
         self.SendCommandToObiNoResponse('_MOVE')
@@ -140,6 +228,7 @@ class Obi:
     ##########################################################
     # Tell Obi to move to the POD from its current location or
     # return to the most-recent bowl if already at the POD.
+    # Also restarts motion after a stop command.    
     ##########################################################
     def MoveToOrFromPOD(self):
         self.SendCommandToObiNoResponse('_FEED')
@@ -161,10 +250,30 @@ class Obi:
         ################################################################
         CurrentMotorPositions = [0, 0, 0, 0, 0, 0]
         CurrentMotorPositionPieces = MotorPositionsString.split(",")
-        #print("motor position pieces: " + MotorPositionsString)
         for iii in range (1, 7):
             CurrentMotorPositions[iii-1] = int(CurrentMotorPositionPieces[iii].strip())
         return CurrentMotorPositions
+
+    ######################################################################################
+    # Get the current motor loads (or currents for XM540s) from Obi as a list of integers.
+    ######################################################################################
+    def MotorLoads(self):
+        MotorLoadsString = self.SendCommandToObiWithResponse('_MTR_LOAD')
+        ################################################################
+        # Obi gives us string with a format of:
+        #
+        #  ~MtrLoad, x1, x2,. x3, x4, x5, x6
+        #
+        # The x's are the motor loads.  Parse 'em out into a list,
+        # keeping in mind that the 1st, index 0, has the leading text,
+        # hence the "-1" on the left side of the assignment to the list
+        # of just the motor loads.
+        ################################################################
+        CurrentMotorLoads = [0, 0, 0, 0, 0, 0]
+        CurrentMotorLoadPieces = MotorLoadsString.split(",")
+        for iii in range (1, 7):
+            CurrentMotorLoads[iii-1] = int(CurrentMotorLoadPieces[iii].strip())
+        return CurrentMotorLoads
 
     ####################################################################
     # Get the current motor temperatures from Obi as a list of integers.
@@ -243,3 +352,15 @@ class Obi:
         self.SendCommandToObiNoResponse("_DISENGAGE")
     def ReengageMotors(self):
         self.SendCommandToObiNoResponse("_ENGAGE")
+        
+    ##################################
+    # Ask Obi where in the path he is.
+    ##################################    
+    def GetPathPositions(self):
+        PathPositionsString = self.SendCommandToObiWithResponse('_PATHTIMES')
+        CurrentPathPositions = [0, 0]
+        CurrentPathPositionPieces = PathPositionsString.split(",")
+        for iii in range (1, 3):
+            CurrentPathPositions[iii-1] = int(CurrentPathPositionPieces[iii].strip())
+        return CurrentPathPositions
+
