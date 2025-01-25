@@ -79,8 +79,8 @@ def get_chatgpt_code(messages):
   elapsedtime = time.time() - begintime
   output = completion.choices[0].message.content
   messages.append({"role": "assistant", "content": output})
-  with open(LOG_FILE_PATH, 'a') as f:
-    f.write(f'ChatGPT Response Time: {elapsedtime}\nChatGPT: {output}\n\n\n')
+  # with open(LOG_FILE_PATH, 'a') as f:
+  #   f.write(f'ChatGPT Response Time: {elapsedtime}\nChatGPT: {output}\n\n\n')
   # print("ChatGPT Response Time: " + str(elapsedtime))
   print("ChatGPT: " + output)
   mod_output = output.replace("import obirobot", "")
@@ -93,13 +93,10 @@ def get_chatgpt_code(messages):
 
 
 def process_frames(frames):
-  ct = datetime.datetime.now()
-  RECORDING_FILE_PATH = f"{path}/voice-recordings/{ct}.wav"
+  RECORDING_FILE_PATH = path + "curr_recording.wav"
   print('Finished recording.')
   print()
-  # sound_file = "sounds_wav/processing.wav"
-  # sound_play_threading(sound_file)
-  #play(sound)
+  # playsound(path + "/sounds/processing.wav")
 
   transcription_begintime = time.time()
   # Save the recorded data as a WAV file
@@ -120,8 +117,8 @@ def process_frames(frames):
 
 with open(path + '/obi-prompt.txt', 'r') as f:
   file_contents = f.read()
-with open(LOG_FILE_PATH, 'w') as f:
-  f.write(f'System: {file_contents} \n\nTemp: {TEMPERATURE} \n\n\n')
+# with open(LOG_FILE_PATH, 'w') as f:
+#   f.write(f'System: {file_contents} \n\nTemp: {TEMPERATURE} \n\n\n')
 messages = [{"role": "system", "content": file_contents}]
 
 
@@ -227,8 +224,8 @@ if __name__ == "__main__":
         audio_stream.stop_stream()
         #audio_stream.close()
         chatgpt_input = process_frames(frames)
-        with open(LOG_FILE_PATH, 'a') as f:
-          f.write(f'User: {chatgpt_input}\n\n\n')
+        # with open(LOG_FILE_PATH, 'a') as f:
+        #   f.write(f'User: {chatgpt_input}\n\n\n')
         messages.append({"role": "user", "content": chatgpt_input})
         get_chatgpt_code(messages)
         audio_stream.start_stream()
