@@ -96,7 +96,7 @@ def process_frames(frames):
   RECORDING_FILE_PATH = path + "curr_recording.wav"
   print('Finished recording.')
   print()
-  playsound(path + "/sounds/processing.wav")
+  playsound(path + "/sounds/processing.mp3")
 
   transcription_begintime = time.time()
   # Save the recorded data as a WAV file
