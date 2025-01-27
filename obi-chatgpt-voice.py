@@ -11,11 +11,19 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 # let the user enter the foods in each bowl
 print()
-print("Enter the foods in each bowl")
+print("Enter the foods in each bowl:")
 bowl0 = input("Bowl 0 (closest to obi's arm): ")
+if bowl0 == "":
+  bowl0 = "empty"
 bowl1 = input("Bowl 1 (counterclockwise from bowl 0): ")
+if bowl1 == "":
+  bowl1 = "empty"
 bowl2 = input("Bowl 2 (counterclockwise from bowl 1): ")
+if bowl2 == "":
+  bowl2 = "empty"
 bowl3 = input("Bowl 3 (counterclockwise from bowl 2): ")
+if bowl3 == "":
+  bowl3 = "empty"
 print()
 
 # modify prompt to include foods
