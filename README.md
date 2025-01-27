@@ -29,10 +29,10 @@ Instructions to use interface:
 conda activate obienv
 python3 /path/to/voicepilot/obi-main.py
 ```
-6. In the second window, run:
+4. In the second window, run:
 ```
 conda activate obienv
 python3 /path/to/voicepilot/obi-chatgpt-voice.py
 ```
-9. Say "Hey Obi" into the mic and wait for the beep. After the beep, speak your command to the robot.
-10. Let the robot carry out this instruction. The words "Ready for another command" will play to indicate that the robot is done excecuting the previous command and ready for a new one. 
+5. Say "Hey Obi" into the mic and wait for the beep. After the beep, speak your command to the robot.
+6. Let the robot carry out this instruction. The words "Ready for another command" will play to indicate that the robot is done excecuting the previous command and ready for a new one. 
