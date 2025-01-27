@@ -38,3 +38,6 @@ python3 /path/to/voicepilot/obi-chatgpt-voice.py
 6. Say "Hey Obi" into the mic and wait for the beep. After the beep, speak your command to the robot.
 7. Let the robot carry out this instruction. The words "Ready for another command" will play to indicate that the robot is done excecuting the previous command and ready for a new one.
 8. To quit, Ctrl + C *only* in the terminal in which `obi-chatgpt-voice.py` is running; this will kill both scripts.
+
+Instructional video for users: [link](https://youtu.be/-VOWMa4Iptc).
+Reference sheet for users: 
