@@ -85,7 +85,7 @@ class ObiMovement():
   def stop(self):
     self.flag = 2
     print("Stopped")
-    playsound(path + "/sounds/stop.mp3")
+    # playsound(path + "/sounds/stop.mp3")
 
   def time_delay(self, secs):
     self.check_for_code()
