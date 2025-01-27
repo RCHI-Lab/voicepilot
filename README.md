@@ -1,4 +1,4 @@
-Code for paper: [VoicePilot: Harnessing LLMs as Speech Interfaces for Physically Assistive Robots](https://dl.acm.org/doi/10.1145/3654777.3676401)
+Code for the paper [VoicePilot: Harnessing LLMs as Speech Interfaces for Physically Assistive Robots](https://dl.acm.org/doi/10.1145/3654777.3676401).
 
 Authors: Akhil Padmanabha*, Jessie Yuan*, Janavi Gupta, Zulekha Karachiwalla, Carmel Majidi, Henny Admoni, Zackory Erickson
 
