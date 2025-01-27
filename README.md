@@ -14,8 +14,8 @@ Setup environment, clone repo, and install required dependencies:
 ```
 conda create -n obienv python=3.12
 conda activate obienv
-git clone ...
-brew install portaudio ffmpeg
+git clone https://github.com/RCHI-Lab/voicepilot.git
+brew install portaudio ffmpeg bash
 pip install -r requirements.txt
 ```
 
