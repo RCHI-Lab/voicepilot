@@ -40,4 +40,4 @@ python3 /path/to/voicepilot/obi-chatgpt-voice.py
 8. To quit, Ctrl + C *only* in the terminal in which `obi-chatgpt-voice.py` is running; this will kill both scripts.
 
 Instructional video for users: [link](https://youtu.be/-VOWMa4Iptc).
-Reference sheet for users: 
+Reference sheet for users: [link](https://github.com/RCHI-Lab/voicepilot/blob/main/obi%20instructional%20materials.png).
