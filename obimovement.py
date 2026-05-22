@@ -1,5 +1,5 @@
 import obi, time, csv, sys, os
-from playsound import playsound
+from playsound3 import playsound
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -77,7 +77,7 @@ class ObiMovement():
   def start(self):
     self.flag = 0
     print("Started")
-  
+
   def pause_indefinitely(self):
     self.flag = 1
     print("Paused")
@@ -96,7 +96,7 @@ class ObiMovement():
       self.check_for_code()
     print("Waiting for " + str(secs) + " seconds.")
     time.sleep(secs)
-  
+
   def cap_speed_and_accel(self):
     if self.speed > 5:
       self.speed = 5
@@ -111,7 +111,7 @@ class ObiMovement():
   def check_for_code(self):
     with open('obi-code.txt', 'r') as f:
       lines = f.readlines()
-      
+
     with open('obi-code.txt', 'w') as f:
       for line in lines:
         mod_line = line.strip('\n ')
@@ -123,13 +123,13 @@ class ObiMovement():
           try:
             ldict = {'self':self}
             exec(mod_line, globals(), ldict)
-          except: 
+          except:
             print("Code (being excecuted within class): " + mod_line)
             if sys.exc_info()[0] != SyntaxError:
               print("This code threw the following error: " + str(sys.exc_info()[0]) + ".")
         else:
           f.write(line)
-    
+
     with open(path + '/obi-code.txt', 'r') as f:
       code = f.read()
     if code != "":
@@ -168,7 +168,7 @@ class ObiMovement():
 
     if bowlno != "previous":
       self.bowlno = bowlno
-    
+
     for i in range(9):
       waypoint = waypoints[i] + [self.speed*2000, self.accel*6000, 0]
       self.robot.SendOnTheFlyWaypointToObi(i, waypoint)
@@ -196,7 +196,7 @@ class ObiMovement():
       waypoints = SCRAPE_2
     else:
       waypoints = SCRAPE_3
-    
+
     for i in range(9):
       waypoint = waypoints[i] + [self.speed*2000, self.accel*6000, 0]
       self.robot.SendOnTheFlyWaypointToObi(i, waypoint)
@@ -235,7 +235,7 @@ class ObiMovement():
 
     if bowlno != "previous":
       self.bowlno = bowlno
-    
+
     for i in range(9):
       waypoint = waypoints[i] + [self.speed*2000, self.accel*6000, 0]
       self.robot.SendOnTheFlyWaypointToObi(i, waypoint)
