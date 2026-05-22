@@ -1,11 +1,11 @@
 from obimovement import ObiMovement
 import sys, time, traceback, os
-from playsound import playsound
+from playsound3 import playsound
 
 obirobot = ObiMovement()
 path = os.path.dirname(os.path.abspath(__file__))
 
-while True: 
+while True:
   with open(path + '/obi-code.txt', 'r') as f:
     code = f.read()
 
@@ -24,7 +24,7 @@ while True:
     try:
       exec(code, globals())
       playsound(path + "/sounds/ready.mp3")
-    except: 
+    except:
       if sys.exc_info()[0] != SyntaxError:
         print("Code (being excecuted from main): " + code)
         print("This code threw the following error: " + traceback.format_exc() + str(sys.exc_info()) + ".")
