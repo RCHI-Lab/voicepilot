@@ -2,13 +2,13 @@ Code for the paper [VoicePilot: Harnessing LLMs as Speech Interfaces for Physica
 
 Authors: Akhil Padmanabha*, Jessie Yuan*, Janavi Gupta, Zulekha Karachiwalla, Carmel Majidi, Henny Admoni, Zackory Erickson
 
-Hardware: 
+Hardware:
 -
 - [Obi feeding robot](https://meetobi.com/)
 - Laptop with MacOS
 - External USB-connected mic (optional)
 
-Instructions to set up interface: 
+Instructions to set up interface:
 -
 Setup environment, clone repo, and install required dependencies:
 ```
@@ -20,11 +20,21 @@ brew install portaudio ffmpeg
 pip install -r requirements.txt
 ```
 
-Instructions to use interface: 
-- 
+You will also need API keys for both OpenAI and PicoVoice to use ChatGPT and Porcupine, two essential components of the speech interface. Once you have these API keys, create a file called `.env` (should be on `/path/to/voicepilot/`) and paste the following template, entering your API keys in the appropriate fields:
+```
+OPENAI_API_KEY=''
+PICOVOICE_API_KEY=''
+```
+After this, you should be set to use the interface! This repo includes the `.env` file in the `.gitignore` to prevent accidentally exposure of your API keys via GitHub but you should personally take any additional steps necessary to keep your keys from getting leaked.
+
+
+
+
+Instructions to use interface:
+-
 1. Optional: run `python3 /path/to/voicepilot/mouth-pos-setup.py` and follow the instuctions displayed to set a custom feeding position.
 2. Fill the bowls with the desired foods and ensure the robot and mic are plugged into the laptop via USB.
-3. Open two different terminal windows on the laptop. 
+3. Open two different terminal windows on the laptop.
 4. In the first window, run:
 ```
 conda activate obienv
