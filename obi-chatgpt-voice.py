@@ -1,13 +1,19 @@
 import pyaudio, wave, datetime, whisper, openai, time
 import pvporcupine
 import struct, os
-import math 
-from playsound import playsound
+import math
+from playsound3 import playsound
 import warnings
+from dotenv import load_dotenv
 warnings.filterwarnings("ignore", category=FutureWarning, module="whisper")
 
 import threading
 path = os.path.dirname(os.path.abspath(__file__))
+
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+PICOVOICE_API_KEY = os.getenv('PICOVOICE_API_KEY')
 
 # let the user enter the foods in each bowl
 print()
@@ -34,14 +40,14 @@ with open(path + '/obi-prompt.txt', 'r') as f:
   file_contents[4] = 'Bowl 2: ' + bowl2 + '\n'
   file_contents[5] = 'Bowl 3: ' + bowl3 + '\n'
   file_contents = ''.join(file_contents)
-  
+
 with open(path + '/obi-prompt.txt', 'w') as f:
   f.write(file_contents)
 
-openai.api_key = #OPEN_AI_API_KEY
+openai.api_key = OPENAI_API_KEY
 
 porcupine = pvporcupine.create(
-  access_key=#PORCUPINE_ACCESS_KEY,
+  access_key=PICOVOICE_API_KEY,
   keyword_paths=[path + '/hey-obi_en_mac_v3_0_0.ppn'],
   sensitivities = [0.5]
 )
@@ -80,7 +86,7 @@ audio_stream = pa.open(
 def get_chatgpt_code(messages):
   begintime = time.time()
   completion = openai.ChatCompletion.create(
-    model="gpt-4o-mini", 
+    model="gpt-4o-mini",
     temperature=TEMPERATURE,
     messages=messages,
   )
@@ -143,22 +149,25 @@ def rms(frame):
     for sample in shorts:
         n = sample * SHORT_NORMALIZE
         sum_squares += n*n
-    # compute the rms 
+    # compute the rms
     rms = math.pow(sum_squares/count,0.5)
     return rms * 1000
 
 
 if __name__ == "__main__":
   audio_stream.start_stream()
-  mic_silence_value = 4 #TODO: change 
+  # MAY NEED TO ADJUST BASED ON AMBIENT NOISE
+  mic_silence_value = 4 #TODO: change
   print()
   # print("Current set mic silence value:", mic_silence_value)
-  current_mic_value = round(rms(audio_stream.read(1024)),2) 
-  # print("Current silence value (assuming no one talking):", current_mic_value)
+  current_mic_value = round(rms(audio_stream.read(1024)),2)
+
+  # HELPFUL TO UNCOMMENT FOR DEBUGGING
+  # print("Current silence value (assuming no one talking):", current_mic_value) #TODO: uncomment for diagnostic prints to help tune mic_silence_value
   print("READY")
 
 
-  try: 
+  try:
     while True:
       data = audio_stream.read(porcupine.frame_length)
       pcm = struct.unpack_from("h" * porcupine.frame_length, data)
@@ -173,28 +182,29 @@ if __name__ == "__main__":
         print()
         print('\"Hey Obi\" detected. Please start speaking.')
         # print("Silence Threshold:", threshold)
-        print()        
+        #print()
+
         frames = []
         timeout_started = False
         timeout_start_time = time.time()
         threshold_timeout = 1.5 #second
 
-        passed_initial_threshold = 0 #0 is false, 1 is true 
-        passed_initial_threshold_start_time = 0 
+        passed_initial_threshold = 0 #0 is false, 1 is true
+        passed_initial_threshold_start_time = 0
         passed_initial_threshold_timeout = 0.2
         passed_initial_threshold_started = False
 
         while True:
           last_data = data
           data = audio_stream.read(1024)
-          # print("Noise Level:", round(rms(data),2), threshold)
+          # print("Noise Level:", round(rms(data),2), threshold)  #TODO: uncomment for diagnostic prints to help tune mic_silence_value
           if rms(data) > threshold and passed_initial_threshold == 0 and passed_initial_threshold_started == False:
             passed_initial_threshold_start_time = time.time()
             frames.append(last_data)
             frames.append(data)
             # print("passed initial threshold")
             passed_initial_threshold_started = True
-          elif passed_initial_threshold_started == True: 
+          elif passed_initial_threshold_started == True:
             if rms(data) < threshold:
               frames = []
               passed_initial_threshold = 0
@@ -205,8 +215,11 @@ if __name__ == "__main__":
             else:
               passed_initial_threshold = 1
               frames.append(data)
-              # print("passed initial threshold")
+              # print("passed initial threshold")  #TODO: uncomment for diagnostic prints to help tune mic_silence_value
               passed_initial_threshold_started = False
+
+
+
           elif passed_initial_threshold == 1:
             if timeout_started == True and time.time()-timeout_start_time > threshold_timeout:
               frames.append(data)
@@ -227,7 +240,7 @@ if __name__ == "__main__":
           else:
             pass
             # print("Waiting for person to speak")
-        
+
         t.join()
         audio_stream.stop_stream()
         #audio_stream.close()
@@ -238,7 +251,7 @@ if __name__ == "__main__":
         get_chatgpt_code(messages)
         audio_stream.start_stream()
 
-          
+
   except KeyboardInterrupt:
     with open(path + '/obi-code.txt', 'w') as f:
       f.write('SYSTEM_TERMINATE()')
