@@ -1,7 +1,8 @@
 pyaudio
 openai-whisper
 openai==0.28
-pvporcupine
+pvporcupine==3.0
 pyserial
-playsound
+playsound3
 pynput
+python-dotenv
