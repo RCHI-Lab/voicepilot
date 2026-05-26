@@ -1,0 +1,3 @@
+The original VoicePilot Code was developed for the Obi firmware version `CMU.hex`
+
+New features required by new projects may have required Obi firmware updates to Obi. These updates may not have backwards compatibility with code, like that for VoicePilot, written for older firmware versions. If commanding the robot fails (specifically due to issues communicating to/moving the robot), you may need to roll back to an older known working firmware version (`CMU.hex`)
